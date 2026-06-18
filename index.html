@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>琵琶行 · 手势交互</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0a0a12;
+  overflow: hidden;
+  font-family: 'STKaiti', 'KaiTi', '楷体', serif;
+  user-select: none;
+}
+
+#c {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 1;
+  cursor: crosshair;
+}
+
+#statusBar {
+  position: fixed;
+  bottom: 28px; left: 50%;
+  transform: translateX(-50%);
+  color: rgba(200,180,140,0.85);
+  font-size: 15px;
+  letter-spacing: 3px;
+  z-index: 50;
+  pointer-events: none;
+  text-shadow: 0 0 20px rgba(200,170,100,0.3);
+  transition: opacity 0.5s;
+}
+
+#modeInfo {
+  position: fixed;
+  top: 18px; right: 18px;
+  color: rgba(200,180,130,0.35);
+  font-size: 11px;
+  letter-spacing: 1px;
+  z-index: 60;
+  pointer-events: none;
+}
+
+#cam {
+  position: fixed;
+  bottom: 12px; right: 12px;
+  width: 160px; height: 120px;
+  border-radius: 8px;
+  border: 2px solid rgba(200,180,130,0.25);
+  transform: scaleX(-1);
+  z-index: 100;
+  opacity: 0.7;
+  object-fit: cover;
+  display: none;
+}
+
+#dbg {
+  position: fixed;
+  top: 50px; left: 10px;
+  color: rgba(180,220,180,0.6);
+  font-size: 11px;
+  font-family: monospace;
+  z-index: 150;
+  pointer-events: none;
+  line-height: 1.5;
+  white-space: pre;
+  display: none;
+}
+
+#startOverlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, #1a1520 0%, #0a0a12 70%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  transition: opacity 0.8s;
+}
+#startOverlay.hidden { opacity: 0; pointer-events: none; }
+
+#startOverlay h1 {
+  font-size: 52px;
+  color: #d4b896;
+  letter-spacing: 16px;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(200,170,100,0.25);
+}
+#startOverlay .sub {
+  color: rgba(200,180,140,0.5);
+  font-size: 15px;
+  letter-spacing: 5px;
+  margin-bottom: 50px;
+}
+#startBtn {
+  padding: 18px 64px;
+  font-size: 20px;
+  font-family: inherit;
+  letter-spacing: 7px;
+  color: #d4b896;
+  background: transparent;
+  border: 1px solid rgba(200,170,100,0.45);
+  border-radius: 40px;
+  cursor: pointer;
+  transition: all 0.4s;
+  outline: none;
+}
+#startBtn:hover {
+  background: rgba(200,170,100,0.07);
+  border-color: rgba(200,170,100,0.85);
+  box-shadow: 0 0 40px rgba(200,170,100,0.12);
+  transform: scale(1.03);
+}
+#loadingMsg {
+  color: rgba(180,160,120,0.5);
+  font-size: 12px;
+  letter-spacing: 2px;
+  margin-top: 24px;
+  min-height: 20px;
+}
+</style>
+</head>
+<body>
+
+<div id="startOverlay">
+  <h1>琵 琶 行</h1>
+  <p class="sub">—— 手 势 交 互 ——</p>
+  <button id="startBtn">开 始 体 验</button>
+  <p id="loadingMsg">点击开始，聆听琵琶…</p>
+</div>
+
+<!-- 左侧竖排古诗词显示区域 -->
+<div id="poemDisplay" style="
+  position: fixed;
+  top: 50%;
+  left: 24px;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  color: rgba(200,180,140,0.75);
+  font-size: 22px;
+  letter-spacing: 12px;
+  line-height: 1.8;
+  z-index: 50;
+  pointer-events: none;
+  text-shadow: 0 0 20px rgba(200,170,100,0.3);
+  opacity: 0;
+  transition: opacity 1s;
+  max-height: 80vh;
+  overflow: hidden;
+"></div>
+
+<canvas id="c"></canvas>
+<div id="statusBar">点击或触摸琵琶区域来弹奏</div>
+<div id="modeInfo">鼠标模式</div>
+<video id="cam" autoplay playsinline></video>
+<!-- 交互说明 -->
+<div id="camGuide" style="
+  position: fixed;
+  bottom: 12px; right: 182px;
+  width: 140px;
+  color: rgba(200,180,140,0.65);
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  line-height: 2;
+  z-index: 100;
+  pointer-events: none;
+  display: none;
+  text-shadow: 0 0 8px rgba(0,0,0,0.6);
+">
+  <div style="color: rgba(220,195,150,0.85); font-size: 13px; letter-spacing: 3px; margin-bottom: 6px;">交互指引</div>
+  <div>☝ 食指指向琴弦</div>
+  <div>↔ 左右移动换弦</div>
+  <div>👆 上方区域触发</div>
+  <div style="margin-top: 6px; font-size: 11px; color: rgba(180,160,130,0.45);">也可鼠标/触屏点击</div>
+</div>
+<div id="dbg"></div>
+<!-- 错误提示 -->
+<div id="errBox" style="
+  position: fixed;
+  top: 60px; left: 10px;
+  color: #f66;
+  font-size: 13px;
+  font-family: monospace;
+  z-index: 200;
+  pointer-events: none;
+  white-space: pre;
+  max-width: 400px;
+  display: none;
+"></div>
+
+<script src="guqin.js"></script>
+</body>
+</html>
