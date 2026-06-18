@@ -1,0 +1,11 @@
+# WorkBuddy internal data
+.workbuddy/
+
+# Temporary files
+__last_msgs.txt
+
+# Old version files
+guqin-gesture.js
+
+# Duplicate entry page (index.html is the canonical one)
+guqin-gesture.html
